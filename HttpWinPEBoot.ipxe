@@ -1,0 +1,35 @@
+#!ipxe
+
+#more about wimboot tips and tricks : http://ipxe.org/wimboot
+set boot-url http://${dhcp-server}
+
+#note : we are not going to use cpuid/arch
+cpuid --ext 29 && set arch amd64 || set arch x86
+
+echo Architecture detected: ${arch}
+echo Platform detected: ${platform}_${buildarch}
+goto ${platform}_${buildarch} || goto unknown
+
+#:pcbios_x86_64
+# WARNING: pcbios_i386 is detected but it's pcbios_x86_64 !!
+
+:pcbios_i386
+# For MBR environment (bios legacy)
+kernel ${boot-url}/wimboot index=2
+initrd ${boot-url}/winpe_${arch}/media/boot/bcd          BCD
+initrd ${boot-url}/winpe_${arch}/media/boot/boot.sdi     boot.sdi
+initrd -n boot.wim ${boot-url}/winpe_${arch}/media/sources/boot.wim boot.wim
+boot
+
+:efi_x86_64
+# For UEFI environment (bios efi)
+kernel ${boot-url}/wimboot index=2
+initrd ${boot-url}/bootmgr.efi bootmgr.efi
+initrd ${boot-url}/winpe_${arch}/media/EFI/MICROSOFT/BOOT/BCD BCD
+initrd ${boot-url}/winpe_${arch}/media/boot/BOOT.SDI BOOT.SDI
+initrd -n boot.wim ${boot-url}/winpe_${arch}/media/sources/BOOT.WIM BOOT.WIM
+boot
+
+:unknown
+# For unknown environnement
+echo Unknown platform ${platform}_${buildarch}
